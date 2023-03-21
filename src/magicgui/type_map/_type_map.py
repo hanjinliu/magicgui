@@ -197,7 +197,7 @@ def _type_optional(
 def _pick_widget_type(
     value: Any = Undefined,
     annotation: Any = Undefined,
-    options: dict | None = None,
+    options: dict[str, Any] | None = None,
     is_result: bool = False,
     raise_on_unknown: bool = True,
 ) -> WidgetTuple:

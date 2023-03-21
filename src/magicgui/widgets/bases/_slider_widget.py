@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Callable
 
 from magicgui.types import Undefined, _Undefined
 from magicgui.widgets import protocols
@@ -112,9 +112,7 @@ class SliderWidget(RangedWidget[T], _OrientationMixin):
         self._widget._mgui_set_readout_visibility(value)
 
 
-class MultiValuedSliderWidget(
-    MultiValueRangedWidget[Tuple[Union[int, float], ...]], SliderWidget
-):
+class MultiValuedSliderWidget(MultiValueRangedWidget[T], SliderWidget):
     """Slider widget that expects a iterable value."""
 
     _widget: protocols.SliderWidgetProtocol

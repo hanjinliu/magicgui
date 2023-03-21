@@ -1,12 +1,27 @@
 from __future__ import annotations
 
 from enum import Enum, EnumMeta
-from typing import Any, Callable, cast
+from typing import Any, Callable, Generic, Iterable, Tuple, Union, cast
 
-from magicgui.types import ChoicesType, Undefined, _Undefined
+from typing_extensions import TypedDict
+
+from magicgui.types import Undefined, _Undefined
 from magicgui.widgets import protocols
 
 from ._value_widget import T, ValueWidget
+
+ChoicesIterable = Union[Iterable[Tuple[str, T]], Iterable[T]]
+ChoicesCallback = Callable[["CategoricalWidget[T]"], ChoicesIterable]
+
+
+class ChoicesDict(TypedDict, Generic[T]):
+    """Dict Type for setting choices in a categorical widget."""
+
+    choices: ChoicesIterable[T]
+    key: Callable[[T], str]
+
+
+ChoicesType = Union[EnumMeta, ChoicesIterable[T], ChoicesCallback[T], ChoicesDict[T]]
 
 
 class CategoricalWidget(ValueWidget[T]):
@@ -38,10 +53,10 @@ class CategoricalWidget(ValueWidget[T]):
     def __init__(
         self,
         value: T | _Undefined = Undefined,
-        choices: ChoicesType = (),
+        choices: ChoicesType[T] = (),
         *,
         allow_multiple: bool | None = None,
-        bind: T | Callable[[ValueWidget], T] | _Undefined = Undefined,
+        bind: T | Callable[[ValueWidget[T]], T] | _Undefined = Undefined,
         nullable: bool = False,
         **base_widget_kwargs: Any,
     ) -> None:
@@ -124,7 +139,7 @@ class CategoricalWidget(ValueWidget[T]):
         return _choices
 
     @choices.setter
-    def choices(self, choices: ChoicesType) -> None:
+    def choices(self, choices: ChoicesType[T]) -> None:
         str_func: Callable = _get_name if isinstance(choices, EnumMeta) else str  # type: ignore  # noqa: E501
         if isinstance(choices, dict):
             if "choices" not in choices or "key" not in choices:
@@ -141,12 +156,44 @@ class CategoricalWidget(ValueWidget[T]):
         else:
             _choices = choices
 
-        _normed: list[tuple[str, Any]] = list(_choices)
+        _normed = list(_choices)
         if not all(isinstance(i, tuple) and len(i) == 2 for i in _normed):
             _normed = [(str_func(i), i) for i in _choices]
         if self._nullable:
             _normed.insert(0, (self.null_string, self.null_value))
         return self._widget._mgui_set_choices(_normed)
+
+
+class MultiValuedCategoricalWidget(CategoricalWidget[T]):
+    _allow_multiple = True
+
+    def __init__(
+        self,
+        value: Iterable[T] | _Undefined = Undefined,
+        choices: ChoicesType[T] = (),
+        *,
+        allow_multiple: bool | None = None,
+        bind: T | Callable[[ValueWidget[T]], T] | _Undefined = Undefined,
+        nullable: bool = False,
+        **base_widget_kwargs: Any,
+    ) -> None:
+        super().__init__(
+            value=value,  # type: ignore
+            choices=choices,
+            allow_multiple=allow_multiple,
+            bind=bind,
+            nullable=nullable,
+            **base_widget_kwargs,
+        )
+
+    @property  # type: ignore
+    def value(self) -> tuple[T, ...]:
+        """Return current value of the widget."""
+        return ValueWidget.value.fget(self)  # type: ignore
+
+    @value.setter
+    def value(self, value: Iterable[T]) -> None:
+        return ValueWidget.value.fset(self)  # type: ignore
 
 
 def _get_name(obj: Enum) -> str:

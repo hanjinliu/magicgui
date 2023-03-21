@@ -33,7 +33,7 @@ from typing_extensions import get_args, get_origin
 from magicgui._type_resolution import resolve_single_type
 from magicgui._util import merge_super_sigs, safe_issubclass
 from magicgui.application import use_app
-from magicgui.types import ChoicesType, FileDialogMode, PathLike, Undefined, _Undefined
+from magicgui.types import FileDialogMode, PathLike, Undefined, _Undefined
 from magicgui.widgets import protocols
 from magicgui.widgets.bases import (
     ButtonWidget,
@@ -41,6 +41,7 @@ from magicgui.widgets.bases import (
     ContainerWidget,
     DialogWidget,
     MainWindowWidget,
+    MultiValuedCategoricalWidget,
     MultiValuedSliderWidget,
     RangedWidget,
     SliderWidget,
@@ -49,6 +50,7 @@ from magicgui.widgets.bases import (
     Widget,
     create_widget,
 )
+from magicgui.widgets.bases._categorical_widget import ChoicesType
 from magicgui.widgets.bases._mixins import _OrientationMixin, _ReadOnlyMixin
 
 WidgetVar = TypeVar("WidgetVar", bound=Widget)
@@ -251,12 +253,12 @@ class FloatSlider(SliderWidget[float]):
 
 
 @backend_widget
-class RangeSlider(MultiValuedSliderWidget):
+class RangeSlider(MultiValuedSliderWidget[int]):
     """A slider widget to adjust a range between two integer values within a range."""
 
 
 @backend_widget
-class FloatRangeSlider(MultiValuedSliderWidget):
+class FloatRangeSlider(MultiValuedSliderWidget[float]):
     """A slider widget to adjust a range defined by two float values within a range."""
 
 
@@ -350,23 +352,24 @@ class LogSlider(TransformedRangedWidget):
 
 
 @backend_widget
-class ComboBox(CategoricalWidget):
+class ComboBox(CategoricalWidget[_V]):
     """A dropdown menu, allowing selection between multiple choices."""
 
 
 @backend_widget
-class Select(CategoricalWidget):
+class Select(MultiValuedCategoricalWidget[_V]):
     """A list of options, allowing selection between multiple choices."""
-
-    _allow_multiple = True
 
 
 @merge_super_sigs
-class RadioButtons(CategoricalWidget, _OrientationMixin):  # type: ignore
+class RadioButtons(CategoricalWidget[_V], _OrientationMixin):  # type: ignore
     """An exclusive group of radio buttons, providing a choice from multiple choices."""
 
     def __init__(
-        self, choices: ChoicesType = (), orientation: str = "vertical", **kwargs: Any
+        self,
+        choices: ChoicesType[_V] = (),
+        orientation: str = "vertical",
+        **kwargs: Any,
     ) -> None:
         app = use_app()
         assert app.native
